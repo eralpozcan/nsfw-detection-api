@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  nsfw-detection:
+    build: .
+    container_name: nsfw-detection
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./public/models:/usr/src/app/public/models
+      - model-cache:/usr/src/app/.cache  # TensorFlow.js model cache
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
+      - API_KEY=${API_KEY:-your-default-api-key}
+      - RATE_LIMIT_WINDOW_MINUTES=${RATE_LIMIT_WINDOW_MINUTES:-15}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
+      - ALLOW_REMOTE_MODEL=true  # GitHub'dan model yüklemeye izin ver
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "X-API-Key: ${API_KEY:-your-default-api-key}", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - nsfw-net
+
+networks:
+  nsfw-net:
+    driver: bridge
+
+volumes:
+  model-cache: 
