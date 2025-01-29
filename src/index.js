@@ -47,9 +47,24 @@ app.use('/', routes);
 app.use(middleware.errorHandler);
 app.use(middleware.notFoundHandler);
 
+// Root route for Vercel
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'NSFW Detection API is running',
+        version: '1.0.0',
+        docs: '/docs'
+    });
+});
+
 // Start server
-const PORT = config.PORT;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    modelService.loadModel();
-}); 
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = config.PORT;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        modelService.loadModel();
+    });
+}
+
+// For Vercel
+module.exports = app; 
