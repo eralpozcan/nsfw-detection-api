@@ -1,6 +1,4 @@
-const tf = require('@tensorflow/tfjs-node');
-const nsfw = require('nsfwjs');
-const path = require('path');
+const nsfw = require('nsfwjs');const path = require('path');
 const fs = require('fs');
 const config = require('../config');
 
