@@ -2,32 +2,61 @@ version: '3.8'
 
 services:
   nsfw-detection:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
     container_name: nsfw-detection
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
-      - ./public/models:/usr/src/app/public/models
-      - model-cache:/usr/src/app/.cache  # TensorFlow.js model cache
+      - ./public/models:/app/public/models
+      - model-cache:/app/.cache
+    env_file:
+      - .env
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=${PORT:-3000}
-      - API_KEY=${API_KEY:-your-default-api-key}
+      - API_KEY=${API_KEY}
+      - PREMIUM_API_KEY=${PREMIUM_API_KEY}
       - RATE_LIMIT_WINDOW_MINUTES=${RATE_LIMIT_WINDOW_MINUTES:-15}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
-      - ALLOW_REMOTE_MODEL=true  # GitHub'dan model yüklemeye izin ver
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - MODEL_RETRY_ATTEMPTS=${MODEL_RETRY_ATTEMPTS:-3}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "-H", "X-API-Key: ${API_KEY:-your-default-api-key}", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "-H", "X-API-Key: ${API_KEY}", "http://localhost:${PORT:-3000}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    security_opt:
+      - no-new-privileges:true
     networks:
       - nsfw-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   nsfw-net:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
-  model-cache: 
+  model-cache:
+    driver: local 
